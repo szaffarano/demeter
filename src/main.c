@@ -34,7 +34,7 @@ int main(void) {
 	}
 
 	while (1) {
-		unsigned char r = receive();
+		unsigned char r = uart_getc();
 		switch (r) {
 		case 'a':
 			printf("Letra A\r\n");

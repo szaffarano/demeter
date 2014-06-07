@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define USART_BUFFER_MASK			(USART_BUFFER_SIZE - 1)
+#define	USART_NEXT_BUFFER_IDX(idx)	((idx+1) & USART_BUFFER_MASK)
+
 buffer_t tx = { .push_idx = 0, .pop_idx = 0 };
 buffer_t rx = { .push_idx = 0, .pop_idx = 0 };
 FILE file;
@@ -39,7 +42,7 @@ void uart_init(uint16_t baud) {
 	stderr = &file;
 }
 
-void send(uint8_t byte) {
+void uart_putc(uint8_t byte) {
 	unsigned char next_idx = USART_NEXT_BUFFER_IDX(tx.push_idx);
 
 	while (next_idx == tx.pop_idx) {
@@ -53,7 +56,7 @@ void send(uint8_t byte) {
 	UCSR0B |= _BV(UDRIE0);
 }
 
-uint8_t receive(void) {
+uint8_t uart_getc(void) {
 	uint8_t next_idx;
 	uint8_t r;
 
@@ -96,6 +99,6 @@ ISR(USART_UDRE_vect) {
 }
 
 int send_stdout(char c, FILE *f) {
-	send(c);
+	uart_putc(c);
 	return 0;
 }
