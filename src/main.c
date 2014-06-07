@@ -37,10 +37,10 @@ int main(void) {
 		unsigned char r = receive();
 		switch (r) {
 		case 'a':
-			printf("Presionó A\r\n");
+			printf("Letra A\r\n");
 			break;
 		case 'b':
-			printf("Presionó B\r\n");
+			printf("Letra B\r\n");
 			break;
 		case 0:
 			break;
