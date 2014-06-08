@@ -13,13 +13,13 @@
 static volatile callback_t callback;
 
 void timer1_init(callback_t cb) {
-	// Seteo del temporizador: preescaler de 1024 y el registro
-	// TCNT1 = 15625 se cuantifica 1 segundo, que sera la
+	// Seteo del temporizador: preescaler de 256 y el registro
+	// TCNT1 = 31250 se cuantifica 1 segundo, que sera la
 	// granularidad manejada.
 	TCCR1A = 0;    // Timer1 en normal port operation.
-	TCCR1B = ((1 << CS12) | (1 << CS10)); // prescaler en 1024
+	TCCR1B = (1 << CS12); // prescaler en 256
 	TCCR1B |= (1 << WGM12); // seteo para CTC (clear time on compare match)
-	OCR1A = 15624; // tics para que pase un segundo segun el prescaler en 1024
+	OCR1A = 31249; // tics para que pase un segundo segun el prescaler en 1024
 	TIMSK1 |= (1 << OCIE1A); // bit para habilitar CTC interrupt
 
 	callback = cb;
