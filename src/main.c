@@ -120,7 +120,8 @@ void cb(int count) {
 	error = readDHT22(&sensor_values);
 	rtc_read(rtc, &current_dt);
 
-	if (tics == LOG_INTERVAL) {
+	if (tics >= LOG_INTERVAL) {
+		printf(".");
 		f_printf(&log_file,
 				"%02d/%02d/%04d %02d:%02d:%02d: Luz=%d Humedad=%d %% Temperatura= %d *C (DHT status: %d)\n",
 				current_dt.date, current_dt.month, current_dt.year,
