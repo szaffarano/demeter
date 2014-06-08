@@ -37,20 +37,29 @@
 #include <avr/io.h>			/* Include device specific declareation file here */
 
 
+#define SPI_PORT	PORTB
+#define	SPI_PIN		PINB
+#define SPI_DDR		DDRB
+
+#define	SPI_MISO	PB4
+#define	SPI_MOSI	PB3
+#define	SPI_SCK		PB5
+#define	SPI_CS		PB2
+
 #define DO_INIT()					/* Initialize port for MMC DO as input */
-#define DO			(PINB &	0x01)	/* Test for MMC DO ('H':true, 'L':false) */
+#define DO			(SPI_PIN & _BV(SPI_MISO))	/* Test for MMC DO ('H':true, 'L':false) */
 
-#define DI_INIT()	DDRB  |= 0x02	/* Initialize port for MMC DI as output */
-#define DI_H()		PORTB |= 0x02	/* Set MMC DI "high" */
-#define DI_L()		PORTB &= 0xFD	/* Set MMC DI "low" */
+#define DI_INIT()	SPI_DDR		|= _BV(SPI_MOSI)	/* Initialize port for MMC DI as output */
+#define DI_H()		SPI_PORT	|= _BV(SPI_MOSI)	/* Set MMC DI "high" */
+#define DI_L()		SPI_PORT 	&= ~_BV(SPI_MOSI)	/* Set MMC DI "low" */
 
-#define CK_INIT()	DDRB  |= 0x04	/* Initialize port for MMC SCLK as output */
-#define CK_H()		PORTB |= 0x04	/* Set MMC SCLK "high" */
-#define	CK_L()		PORTB &= 0xFB	/* Set MMC SCLK "low" */
+#define CK_INIT()	SPI_DDR		|= _BV(SPI_SCK)	/* Initialize port for MMC SCLK as output */
+#define CK_H()		SPI_PORT 	|= _BV(SPI_SCK)	/* Set MMC SCLK "high" */
+#define	CK_L()		SPI_PORT 	&= ~_BV(SPI_SCK)	/* Set MMC SCLK "low" */
 
-#define CS_INIT()	DDRB  |= 0x08	/* Initialize port for MMC CS as output */
-#define	CS_H()		PORTB |= 0x08	/* Set MMC CS "high" */
-#define CS_L()		PORTB &= 0xF7	/* Set MMC CS "low" */
+#define CS_INIT()	SPI_DDR		|= _BV(SPI_CS)	/* Initialize port for MMC CS as output */
+#define	CS_H()		SPI_PORT 	|= _BV(SPI_CS)	/* Set MMC CS "high" */
+#define CS_L()		SPI_PORT 	&= ~_BV(SPI_CS)	/* Set MMC CS "low" */
 
 
 static
