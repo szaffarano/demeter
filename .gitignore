@@ -2,3 +2,5 @@
 .project
 .settings
 Release
+**/*elf
+**/*hex
