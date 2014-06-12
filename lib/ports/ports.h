@@ -10,5 +10,7 @@
 
 
 void ports_init(void);
+void enable_relay(uint8_t number);
+void disable_relay(uint8_t number);
 
 #endif /* PORTS_H_ */

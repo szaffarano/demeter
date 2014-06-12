@@ -30,12 +30,34 @@ void ports_init(void) {
 	LED_DDR |= _BV(LED);
 }
 
+void enable_relay(uint8_t number) {
+	switch (number) {
+	case 1:
+		RELAY1_PORT &= ~(1 << RELAY1);
+		break;
+	case 2:
+		RELAY2_PORT &= ~(1 << RELAY2);
+		break;
+	}
+}
+
+void disable_relay(uint8_t number) {
+	switch (number) {
+	case 1:
+		RELAY1_PORT |= (1 << RELAY1);
+		break;
+	case 2:
+		RELAY2_PORT |= (1 << RELAY2);
+		break;
+	}
+}
+
 // ISRs
 ISR(PCINT0_vect) {
 	// si el boton esta presionado, el bit en PUSH_PORT es low
 	if ((PUSH_PORT & (1 << PUSH)) == 0) {
-		RELAY1_PORT &= ~(1 << RELAY1); // bit de relay low lo activa
+		enable_relay(1);
 	} else {
-		RELAY1_PORT |= (1 << RELAY1);
+		disable_relay(1);
 	}
 }
