@@ -5,6 +5,8 @@
  *      Author: sebas
  */
 
+#include <rtc/rtc.h>
+
 #ifndef SANDBOX_H_
 #define SANDBOX_H_
 
@@ -29,10 +31,18 @@
 #define	PHOTORESISTOR	PC0
 
 #define	LOG				"clima.log"
-#define	LOG_INTERVAL	30
 
-#define LED_DDR		DDRB
-#define	LED_PORT	PORTB
-#define	LED			PB0
+#define LED_DDR			DDRB
+#define	LED_PORT		PORTB
+#define	LED				PB0
+
+#define	MAX_EVENTS		10
+// datos
+
+typedef struct _event_t {
+	rtc_datetime_24h_t start;
+	unsigned int duration;
+	uint8_t target;
+} event_t;
 
 #endif /* SANDBOX_H_ */
