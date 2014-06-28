@@ -6,6 +6,7 @@
  */
 #include <avr/eeprom.h>
 #include "config/config.h"
+#include <string.h>
 
 static event_t EEMEM ee_events[MAX_EVENTS];
 static event_t events[MAX_EVENTS];
@@ -28,8 +29,9 @@ uint8_t get_log_interval(void) {
 	return log_interval;
 }
 
-void set_events(event_t* data) {
-	eeprom_update_block(events, ee_events, sizeof(event_t) * MAX_EVENTS);
+void set_events(event_t *data) {
+	eeprom_update_block(data, ee_events, sizeof(event_t) * MAX_EVENTS);
+	parameters_init();
 }
 
 void set_log_interval(uint8_t secs) {

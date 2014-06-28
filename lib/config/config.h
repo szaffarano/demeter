@@ -8,7 +8,7 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#include <sandbox.h>
+#include <demeter.h>
 
 void parameters_init(void);
 event_t* get_events(void);
