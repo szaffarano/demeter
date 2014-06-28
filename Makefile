@@ -10,12 +10,12 @@ BAUD = 9600
 ## Also try BAUD = 19200 or 38400 if you're feeling lucky.
 
 ## This is where your main() routine lives 
-MAIN = src/sandbox.c
+MAIN = src/demeter.c
 
 ## If you've split your program into multiple files, 
 ## include the additional .c source (in same directory) here 
 ## (and include the .h files in your foo.c)
-LOCAL_SOURCE = lib/adc/*.c lib/config/*.c lib/dht/*.c lib/ff/*.c lib/i2c/*.c lib/ports/*.c lib/rtc/*.c lib/timer/*.c lib/uart/*c
+LOCAL_SOURCE = lib/modbus/*.c lib/modbus/**/*.c lib/adc/*.c lib/config/*.c lib/dht/*.c lib/ff/*.c lib/i2c/*.c lib/ports/*.c lib/rtc/*.c lib/timer/*.c 
 
 ## Here you can link to one more directory (and multiple .c files)
 # EXTRA_SOURCE_DIR = ../AVR-Programming-Library/
@@ -56,6 +56,7 @@ CFLAGS += -Wall -Wstrict-prototypes
 CFLAGS += -g -ggdb
 CFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,--relax
 CFLAGS += -std=gnu99
+CFLAGS += -fno-strict-aliasing ## elimina warning de fatfs
 ## CFLAGS += -Wl,-u,vfprintf -lprintf_flt -lm  ## for floating-point printf
 ## CFLAGS += -Wl,-u,vfprintf -lprintf_min      ## for smaller printf
 
