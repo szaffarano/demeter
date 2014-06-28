@@ -10,6 +10,6 @@
 
 typedef void(*callback_t)(void);
 
-void timer1_init(callback_t callback);
+void timer0_init(callback_t callback);
 
 #endif /* TIMER_H_ */

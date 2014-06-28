@@ -4,30 +4,44 @@
  *  Created on: 03/06/2014
  *      Author: sebas
  */
-#include <sandbox.h>
+#include <demeter.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "timer.h"
 #include <stdio.h>
 
 static volatile callback_t callback;
+static uint8_t counter = 0;
 
-void timer1_init(callback_t cb) {
+/**
+ * Rutina de inicializacion del timer0.
+ * Inicializa:
+ *  - Normal port operation
+ *  - CTC mode
+ *  - Preescaler en 1024 (8 mhz/ 256 = 31250 ticks/sec)
+ *  - Output Compare Register A en 250: 250 * 125 = 31250 (cada 125 veces pasa 1 segundo, o sea, período de 8 millisegundos)
+ */
+void timer0_init(callback_t cb) {
 	// Seteo del temporizador: preescaler de 256 y el registro
 	// TCNT1 = 31250 se cuantifica 1 segundo, que sera la
 	// granularidad manejada.
-	TCCR1A = 0;    // Timer1 en normal port operation.
-	TCCR1B = (1 << CS12); // prescaler en 256
-	TCCR1B |= (1 << WGM12); // seteo para CTC (clear time on compare match)
-	OCR1A = 31249; // tics para que pase un segundo segun el prescaler en 1024
-	TIMSK1 |= (1 << OCIE1A); // bit para habilitar CTC interrupt
+
+	TCCR0A = 0; /* seteo en Normal Port Operation */
+	TCCR0A |= (1 << WGM01); /* modo CTC */
+	TCCR0B = (1 << CS02); /* prescaler en 256 */
+
+	OCR0A = 249; /* interrupcion TIMER0_COMPA con frecuencia de 125 hz */
+	TIMSK0 |= (1 << OCIE0A); /* habilito interrupcion TIMER0_COMPA*/
 
 	callback = cb;
 }
 
-ISR(TIMER1_COMPA_vect) {
-	if (callback != NULL) {
-		callback();
+ISR(TIMER0_COMPA_vect) {
+	counter++;
+	if (counter == 125) {
+		if (callback != NULL) {
+			callback();
+		}
+		counter = 0;
 	}
 }
-
