@@ -4,9 +4,15 @@
  *  Created on: 03/06/2014
  *      Author: sebas
  */
-#include <sandbox.h>
+#include <demeter.h>
+
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
+
+#include <stdint.h>
+
+static inline void delay_ms(uint16_t);
 
 void ports_init(void) {
 	// interrupciones Pin Change
@@ -52,6 +58,17 @@ void disable_relay(uint8_t number) {
 	}
 }
 
+void blinkenlight(uint8_t times, uint8_t delay) {
+	int i = 0;
+	for (i = 0; i < times; i++) {
+		LED_PORT ^= _BV(LED);
+		delay_ms(delay / 2);
+		LED_PORT ^= _BV(LED);
+		delay_ms(delay);
+	}
+	LED_PORT &= ~_BV(LED);
+}
+
 // ISRs
 ISR(PCINT0_vect) {
 	// si el boton esta presionado, el bit en PUSH_PORT es low
@@ -59,5 +76,12 @@ ISR(PCINT0_vect) {
 		enable_relay(1);
 	} else {
 		disable_relay(1);
+	}
+}
+
+static inline void delay_ms(uint16_t ms) {
+	uint16_t i = 0;
+	for (; i < ms; i++) {
+		_delay_ms(1);
 	}
 }
