@@ -4,3 +4,4 @@
 Release
 **/*elf
 **/*hex
+.pydevproject
