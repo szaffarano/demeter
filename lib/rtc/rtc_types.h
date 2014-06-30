@@ -11,13 +11,13 @@
 #include <inttypes.h>
 
 typedef struct _rtc_datetime_24h_t {
-	volatile int16_t year;
-	volatile int8_t month;
-	volatile int8_t date;
-	volatile int8_t hour;
-	volatile int8_t minute;
-	volatile int8_t second;
-	volatile int8_t day_of_week;
+	int16_t year;
+	int8_t month;
+	int8_t date;
+	int8_t hour;
+	int8_t minute;
+	int8_t second;
+	int8_t day_of_week;
 } rtc_datetime_24h_t;
 
 typedef struct _rtc_device_t {
