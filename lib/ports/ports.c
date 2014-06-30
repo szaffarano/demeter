@@ -16,8 +16,8 @@ static inline void delay_ms(uint16_t);
 
 void ports_init(void) {
 	// interrupciones Pin Change
-	PCICR |= (1 << PCIE0); // PCIE3 habilita PCINT[7:0]
-	PCMSK0 |= (1 << PCINT1); // Solo dispara la PCINT para PB1 = PCINT1
+	PCICR |= (1 << PCIE2); // PCIE2 habilita PCINT[23:16]
+	PCMSK2 |= (1 << PCINT23); // Solo dispara la PCINT para PD7 = PCINT23
 
 	// I/O
 	// pulsador para activar relay manualmente.
@@ -70,7 +70,7 @@ void blinkenlight(uint8_t times, uint8_t delay) {
 }
 
 // ISRs
-ISR(PCINT0_vect) {
+ISR(PCINT2_vect) {
 	// si el boton esta presionado, el bit en PUSH_PORT es low
 	if ((PUSH_PORT & (1 << PUSH)) == 0) {
 		enable_relay(1);

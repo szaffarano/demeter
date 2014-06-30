@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from pymodbus.register_write_message import WriteMultipleRegistersResponse
+from pymodbus.register_read_message import ReadHoldingRegistersResponse,\
+    ReadRegistersResponseBase
+from pymodbus.bit_read_message import ReadBitsResponseBase
+from pymodbus.bit_write_message import WriteMultipleCoilsResponse
 
 LOG_FILENAME = '/tmp/modbus-cli.log'
 HISTORY_FILENAME = '/tmp/.modbus_history'
@@ -57,4 +62,13 @@ if __name__ == '__main__':
         elif isinstance(response, ExceptionResponse):
             print("Error en la ejecución: %s" % response)
         else:
-            print("Holding registers: %s" % response.registers)
+            if isinstance(response, WriteMultipleRegistersResponse):
+                print("Se escribieron %s registros" % response.count)
+            elif isinstance(response, ReadRegistersResponseBase):
+                print("Se leyeron %s registros: %s" % (len(response.registers), response.registers))
+            elif isinstance(response, ReadBitsResponseBase):
+                print("Se leyeron %s coils: %s" % (len(response.bits), response.bits))
+            elif isinstance(response, WriteMultipleCoilsResponse):
+                print("Se escribieron %s coils" % response.count)
+            else:
+                print("Respuesta de la ejecución de %s: %s" % (command, response))

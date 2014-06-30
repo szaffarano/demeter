@@ -8,7 +8,7 @@ Versión preliminar con una implementación parcial del protocolo modbus.
 
 ### Roadmap
 
-- Terminar de mapear registros modbus a sensores, parámetros y comandos del controlador.
+- ~~Terminar de mapear registros modbus a sensores, parámetros y comandos del controlador.~~
 - Implementar servicio rest para interactuar remotamente.
 - Realizar prueba de concepto para usar NRF24L01+ en lugar del módulo bluetooth.
 - Documentar esquemáticos en kicad.
@@ -17,3 +17,5 @@ Versión preliminar con una implementación parcial del protocolo modbus.
 - Implementar los relays usando triacs+opto.
 - Agregar sensor de humedad de tierra.
 - Desdoblar los controles para riego tradicional (tierra) e hidropónico en forma independiente.
+- Optimizar lógica en los mapeos para ahorrarse algunos ciclos de cpu y memoria.
+- Agregar en el cliente python funciones de alto nivel (ej get_date que lea grupo de registros de la fecha en vez de llamar a read_holding_registers).

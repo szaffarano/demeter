@@ -39,17 +39,32 @@
 // cantidad de eventos que permite parametrizar.
 #define	MAX_EVENTS		10
 
+typedef struct _datetime_t {
+	int16_t year;
+	int16_t month;
+	int16_t date;
+	int16_t hour;
+	int16_t minute;
+	int16_t second;
+} datetime_t;
+
+typedef struct _state_t {
+	int16_t temperature;
+	int16_t humidity;
+	int16_t light;
+} state_t;
+
 typedef struct _instant_t {
-	uint8_t hour;
-	uint8_t minute;
-	uint8_t second;
+	uint16_t hour;
+	uint16_t minute;
+	uint16_t second;
 } instant_t;
 
 // un evento es el cron que indica cuándo activar un relay y por cuánto tiempo.
 typedef struct _event_t {
 	instant_t start;
-	unsigned int duration;
-	uint8_t target;
+	uint16_t duration;
+	uint16_t target;
 } event_t;
 
 #endif /* DEMETER_H_ */

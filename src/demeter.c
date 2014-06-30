@@ -32,33 +32,32 @@
 #include <rtc/rtc.h>
 #include <rtc/rtc_ds1307.h>
 
-#define	REG_INPUT_START	1
-
-typedef enum {
-	IR_TEMPERATURE, IR_HUMIDITY, IR_LIGHT, IR_NREGS
-} input_registers;
+#define DATETIME_SIZE	(sizeof(datetime_t) / 2)
+#define EVENTS_SIZE		((sizeof(event_t) * MAX_EVENTS) / 2)
+#define LOGEVENT_SIZE	(sizeof(uint16_t) / 2)
+#define STATE_SIZE		(sizeof(state_t) / 2)
+#define NUMBER_OF_COILS	2
 
 FATFS fs;
 FIL log_file;
-DHT22_DATA_t sensor_values;
-rtc_datetime_24h_t current_dt;
 rtc_device_t *rtc = &rtc_ds1307;
+
+state_t state;
+datetime_t datetime;
+uint8_t relays; /* estado de los relays, lo manejo con bitwise operations */
 
 volatile unsigned int ticks = 0;
 
 static void timer0_callback(void);
-static uint16_t get_seconds(instant_t t);
+static inline uint16_t get_seconds(instant_t t);
 static inline void update_state(void);
 
-#define JOIN_BYTES(u,l)		(u<<8) | (l & 0xFF)
 /**
  * MCU: Atmega328
  * Fuses: Oscilador interno a 8 Mhz (sin dividir por 8)
  * 		-U lfuse:w:0xe2:m -U hfuse:w:0xd1:m -U efuse:w:0x07:m
  */
 int main(void) {
-	ports_init();
-
 	adc_init();
 
 	timer0_init(timer0_callback);
@@ -78,6 +77,8 @@ int main(void) {
 
 	parameters_init();
 
+	ports_init();
+
 	f_mount(&fs, "", 0);
 	if (f_open(&log_file, LOG, FA_OPEN_ALWAYS | FA_WRITE) == FR_OK) {
 		if (f_lseek(&log_file, f_size(&log_file)) == FR_OK) {
@@ -86,17 +87,219 @@ int main(void) {
 		}
 	}
 
-	printf("\r\nAplicación inicializada!\r\n");
 	while (1) {
 		eMBPoll();
 		update_state();
-		_delay_ms(200);
+		for (uint8_t i = 0; i < NUMBER_OF_COILS; i++) {
+			if (relays & (1 << i)) {
+				enable_relay(i+1);
+			} else {
+				disable_relay(i+1);
+			}
+		}
+		_delay_ms(100);
 	}
 
 	return (0);
 }
 
+void update_state(void) {
+	DHT22_DATA_t sensor_values;
+	rtc_datetime_24h_t current_dt;
+	readDHT22(&sensor_values);
+	rtc_read(rtc, &current_dt);
+
+	state.temperature = sensor_values.raw_temperature;
+	state.humidity = sensor_values.raw_humidity;
+	state.light = adc_read(PHOTORESISTOR);
+
+	datetime = (datetime_t ) { .year = current_dt.year, .month =
+					current_dt.month, .date = current_dt.date, .hour =
+					current_dt.hour, .minute = current_dt.minute, .second =
+					current_dt.second };
+
+	/* @TODO: implementar logica de activación de relays */
+
+	if (ticks >= get_log_interval()) {
+		f_printf(&log_file,
+				"%02d/%02d/%04d %02d:%02d:%02d: Luz=%d Humedad=%d %% Temperatura= %d *C\n",
+				datetime.date, datetime.month, datetime.year, datetime.hour,
+				datetime.minute, datetime.second, state.light, state.humidity,
+				state.temperature);
+		event_t* events = get_events();
+		for (int i = 0; i < MAX_EVENTS; i++) {
+			event_t e = *events;
+			f_printf(&log_file,
+					"Evento %d: Inicio=%d:%d:%d Duracion=%d Relay=%d\n", i,
+					e.start.hour, e.start.minute, e.start.second, e.duration,
+					e.target);
+			events++;
+		}
+		f_sync(&log_file);
+		ticks = 0;
+	}
+}
+
+void timer0_callback() {
+	ticks++;
+	LED_PORT ^= _BV(LED);
+}
+
+/* Callbacks Modbus */
+
+eMBErrorCode eMBRegInputCB(UCHAR * pucRegBuffer, USHORT usAddress,
+		USHORT usNRegs) {
+
+	if ((usAddress + usNRegs - 1) > STATE_SIZE) {
+		return MB_ENOREG;
+	}
+	int16_t* raw_state = (int16_t*) &state;
+
+	raw_state += usAddress - 1;
+	while (usNRegs > 0) {
+		*pucRegBuffer++ = (*raw_state >> 8);
+		*pucRegBuffer++ = (*raw_state & 0xFF);
+		usNRegs--;
+		raw_state++;
+	}
+
+	return MB_ENOERR;
+}
+
+/**
+ * Holding registers (empieza en 1):
+ * 	LOG_INTERVAL + DATETIME + EVENTS
+ */
+eMBErrorCode eMBRegHoldingCB(UCHAR * buffer, USHORT address, USHORT regs,
+		eMBRegisterMode mode) {
+
+	// indice para saber por qué grupo de registros voy avanzando
+	uint16_t idx = address;
+
+	// hago operaciones de bit en una variable, para no usar dos
+	// es para indicar si debo actualizar el grupo de registros
+	// de eventos y/o datetime.
+	uint8_t flag = 0;
+
+	// grupo de registros correspondiente a datetime
+	uint16_t* dt = (uint16_t*) &datetime;
+
+	// grupo de registros correspondiente a los eventos.
+	uint16_t* events = (uint16_t*) get_events();
+
+	if ((address + regs - 1) > (EVENTS_SIZE + LOGEVENT_SIZE + DATETIME_SIZE)) {
+		return MB_ENOREG;
+	}
+
+	// si me piden algo que va mas allá de logevent (primer registro)
+	// avanzo el siguiente grupo, datetime
+	if (address > LOGEVENT_SIZE) {
+		dt += address - LOGEVENT_SIZE - 1;
+	}
+
+	// si me piden algo que va mas allá del segundo registro (datetime)
+	// avanzo el tercer grupo, events hasta donde haga falta.
+	if (address > (LOGEVENT_SIZE + DATETIME_SIZE)) {
+		events += address - LOGEVENT_SIZE - DATETIME_SIZE - 1;
+	}
+
+	// operación de lectura
+	if (mode == MB_REG_READ) {
+		for (; idx < regs + address; idx++) {
+			if (idx > 0 && idx <= LOGEVENT_SIZE) {
+				uint16_t log_interval = get_log_interval();
+				*buffer++ = (log_interval >> 8);
+				*buffer++ = (log_interval & 0xFF);
+			} else if (idx > LOGEVENT_SIZE
+					&& idx <= (LOGEVENT_SIZE + DATETIME_SIZE)) {
+				*buffer++ = (*dt >> 8);
+				*buffer++ = (*dt & 0xFF);
+				dt++;
+			} else {
+				*buffer++ = (*events >> 8);
+				*buffer++ = (*events & 0xFF);
+				events++;
+			}
+		}
+		// operación de escritura
+	} else {
+		for (; idx < regs + address; idx++) {
+			if (idx > 0 && idx <= LOGEVENT_SIZE) {
+				uint16_t log_interval = (*buffer++ << 8);
+				log_interval |= (*buffer++ & 0xFF);
+				set_log_interval(log_interval);
+			} else if (idx > LOGEVENT_SIZE
+					&& idx <= (LOGEVENT_SIZE + DATETIME_SIZE)) {
+				*dt = (*buffer++ << 8);
+				*dt |= (*buffer++ & 0xFF);
+				dt++;
+				flag |= (1 << 1); /* se modifica algun campo de la fecha, marco flag */
+			} else {
+				*events = (*buffer++ << 8);
+				*events |= (*buffer++ & 0xFF);
+				events++;
+				flag |= (1 << 2); /* se modifica algún evento, marco flag */
+			}
+		}
+
+		if ((flag & (1 << 1))) {
+			rtc_datetime_24h_t newdate;
+			newdate.year = datetime.year;
+			newdate.month = datetime.month;
+			newdate.date = datetime.date;
+			newdate.hour = datetime.hour;
+			newdate.minute = datetime.minute;
+			newdate.second = datetime.second;
+			rtc_write(rtc, &newdate);
+		}
+
+		if ((flag & (1 << 2))) {
+			set_events(get_events());
+		}
+	}
+
+	return MB_ENOERR;
+}
+
+eMBErrorCode eMBRegCoilsCB(UCHAR * pucRegBuffer, USHORT usAddress,
+		USHORT usNCoils, eMBRegisterMode eMode) {
+	if (usAddress + usNCoils - 1 > NUMBER_OF_COILS) {
+		return MB_ENOREG;
+	}
+	usAddress--; /* empiezo en cero. */
+	if (eMode == MB_REG_READ) {
+		while (usNCoils > 0) {
+			if (relays & (1 << usAddress)) {
+				*pucRegBuffer |= (1 << usAddress);
+			}
+			usNCoils--;
+			usAddress++;
+		}
+	} else {
+		while (usNCoils > 0) {
+			if ((*pucRegBuffer & (1 << usAddress))) {
+				relays |= (1 << usAddress);
+			} else {
+				relays &= ~(1 << usAddress);
+			}
+			usNCoils--;
+			usAddress++;
+		}
+	}
+	return MB_ENOERR;
+}
+
+eMBErrorCode eMBRegDiscreteCB(UCHAR * pucRegBuffer, USHORT usAddress,
+		USHORT usNDiscrete) {
+	return MB_ENOREG;
+}
+
+/**
+ * Función usada para setearle la fecha a los archivos.
+ */
 DWORD get_fattime(void) {
+	rtc_datetime_24h_t current_dt;
+	rtc_read(rtc, &current_dt);
 	return ((DWORD) (current_dt.year - 1980) << 25) /* Year */
 	| ((DWORD) current_dt.month << 21) /* Month */
 	| ((DWORD) current_dt.date << 16) /* Mday */
@@ -105,177 +308,11 @@ DWORD get_fattime(void) {
 	| ((DWORD) current_dt.second >> 1); /* Sec */
 }
 
-void timer0_callback() {
-	ticks++;
-	LED_PORT ^= _BV(LED);
-}
-
-void update_state(void) {
-	DHT22_ERROR_t error = readDHT22(&sensor_values);
-	rtc_read(rtc, &current_dt);
-	event_t *events = get_events();
-
-	uint16_t start_secs;
-	uint16_t current_secs;
-	uint8_t i = 0;
-
-	current_secs = get_seconds((instant_t){current_dt.hour, current_dt.minute, current_dt.date});
-	uint8_t flag = 0;
-	for (; i < MAX_EVENTS; i++) {
-		if (events[i].target != -1) {
-			start_secs = get_seconds(events[i].start);
-			if (start_secs < current_secs
-					&& (start_secs + events[i].duration) > current_secs) {
-				flag |= (1 << events[i].target);
-			}
-		}
-	}
-	for (i = 1; i <= 2; i++) {
-		if (flag & (1 << i)) {
-			enable_relay(i);
-		} else {
-			disable_relay(i);
-		}
-	}
-
-	if (ticks >= get_log_interval()) {
-		f_printf(&log_file,
-				"%02d/%02d/%04d %02d:%02d:%02d: Luz=%d Humedad=%d %% Temperatura= %d *C (DHT status: %d)\n",
-				current_dt.date, current_dt.month, current_dt.year,
-				current_dt.hour, current_dt.minute, current_dt.second,
-				adc_read(PHOTORESISTOR), sensor_values.raw_humidity,
-				sensor_values.raw_temperature, error);
-		f_sync(&log_file);
-		ticks = 0;
-	}
-}
-
-static uint16_t get_seconds(instant_t t) {
+/**
+ * Convierte un instant_t a segundos.  Esos segundos representan el tiempo
+ * transcurrido desde las 0 hs hasta el momento del instante
+ * propiamente dicho.
+ */
+static inline uint16_t get_seconds(instant_t t) {
 	return (t.hour * 60 * 60) + (t.minute * 60) + t.second;
-}
-
-eMBErrorCode eMBRegInputCB(UCHAR * pucRegBuffer, USHORT usAddress,
-		USHORT usNRegs) {
-	eMBErrorCode eStatus = MB_ENOERR;
-
-	if ((usAddress >= REG_INPUT_START)
-			&& (usAddress + usNRegs <= REG_INPUT_START + IR_NREGS)) {
-		uint16_t ir = usAddress - REG_INPUT_START;
-		int16_t value;
-		while (usNRegs > 0) {
-			switch (ir) {
-			case IR_TEMPERATURE:
-				value = sensor_values.raw_temperature;
-				break;
-			case IR_HUMIDITY:
-				value = sensor_values.raw_humidity;
-				break;
-			case IR_LIGHT:
-				value = adc_read(PHOTORESISTOR);
-				break;
-			default:
-				value = -1	;
-			}
-
-			*pucRegBuffer++ = (value >> 8);
-			*pucRegBuffer++ = (value & 0xFF);
-			ir++;
-			usNRegs--;
-		}
-	} else {
-		eStatus = MB_ENOREG;
-	}
-
-	return eStatus;
-
-	return MB_ENOREG;
-}
-
-eMBErrorCode eMBRegHoldingCB(UCHAR * pucRegBuffer, USHORT usAddress,
-		USHORT usNRegs, eMBRegisterMode eMode) {
-	eMBErrorCode status = MB_ENOERR;
-
-	if (usAddress == 1 && usNRegs == 6) {
-		// fecha
-		if (eMode == MB_REG_READ) {
-			*pucRegBuffer++ = current_dt.year >> 8;
-			*pucRegBuffer++ = current_dt.year & 0xFF;
-
-			*pucRegBuffer++ = current_dt.month >> 8;
-			*pucRegBuffer++ = current_dt.month & 0xFF;
-
-			*pucRegBuffer++ = current_dt.date >> 8;
-			*pucRegBuffer++ = current_dt.date & 0xFF;
-
-			*pucRegBuffer++ = current_dt.hour >> 8;
-			*pucRegBuffer++ = current_dt.hour & 0xFF;
-
-			*pucRegBuffer++ = current_dt.minute >> 8;
-			*pucRegBuffer++ = current_dt.minute & 0xFF;
-
-			*pucRegBuffer++ = current_dt.second >> 8;
-			*pucRegBuffer++ = current_dt.second & 0xFF;
-		} else {
-			rtc_datetime_24h_t tmp;
-
-			tmp.year = (*pucRegBuffer++ << 8);
-			tmp.year |= (*pucRegBuffer++ & 0xFF);
-
-			tmp.month = (*pucRegBuffer++ << 8);
-			tmp.month |= (*pucRegBuffer++ & 0xFF);
-
-			tmp.date = (*pucRegBuffer++ << 8);
-			tmp.date |= (*pucRegBuffer++ & 0xFF);
-
-			tmp.hour = (*pucRegBuffer++ << 8);
-			tmp.hour |= (*pucRegBuffer++ & 0xFF);
-
-			tmp.minute = (*pucRegBuffer++ << 8);
-			tmp.minute |= (*pucRegBuffer++ & 0xFF);
-
-			tmp.second = (*pucRegBuffer++ << 8);
-			tmp.second |= (*pucRegBuffer++ & 0xFF);
-
-			rtc_write(rtc, &tmp);
-		}
-	} else if (usAddress == 7 && usNRegs == 1) {
-		// intervalo de logging
-		if (eMode == MB_REG_READ) {
-			//*pucRegBuffer++ = get_log_interval() >> 8;
-			*pucRegBuffer++ = 0;
-			*pucRegBuffer = get_log_interval();
-		} else {
-			set_log_interval(*++pucRegBuffer & 0xFF);
-		}
-	} else if (usAddress == 8 && usNRegs <= (MAX_EVENTS * sizeof(event_t)) && (usNRegs%sizeof(event_t) == 0)) {
-		// intervalo de logging
-		if (eMode == MB_REG_READ) {
-			uint8_t count;
-			event_t *events = get_events();
-
-			for(count = 0; count < usNRegs / sizeof(event_t); count++) {
-				event_t e = *events++;
-				*pucRegBuffer++ = e.start.hour;
-				*pucRegBuffer++ = e.start.minute;
-				*pucRegBuffer++ = e.start.second;
-				*pucRegBuffer++ = e.duration >> 8;
-				*pucRegBuffer++ = e.duration & 0xFF;
-				*pucRegBuffer++ = e.target;
-			}
-		} else {
-		}
-	} else {
-		status = MB_ENOREG;
-	}
-	return status;
-}
-
-eMBErrorCode eMBRegCoilsCB(UCHAR * pucRegBuffer, USHORT usAddress,
-		USHORT usNCoils, eMBRegisterMode eMode) {
-	return MB_ENOREG;
-}
-
-eMBErrorCode eMBRegDiscreteCB(UCHAR * pucRegBuffer, USHORT usAddress,
-		USHORT usNDiscrete) {
-	return MB_ENOREG;
 }
