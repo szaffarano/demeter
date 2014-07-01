@@ -11,13 +11,13 @@
 #include <rtc/rtc.h>
 
 // Relays
-#define  RELAY1			PB6
+#define  RELAY0			PB6
+#define  RELAY0_PORT	PORTB
+#define  RELAY0_DDR		DDRB
+
+#define  RELAY1			PB7
 #define  RELAY1_PORT	PORTB
 #define  RELAY1_DDR		DDRB
-
-#define  RELAY2			PB7
-#define  RELAY2_PORT	PORTB
-#define  RELAY2_DDR		DDRB
 
 // Pulsador
 #define  PUSH			PD7
@@ -65,6 +65,7 @@ typedef struct _event_t {
 	instant_t start;
 	uint16_t duration;
 	uint16_t target;
+	uint16_t enabled;
 } event_t;
 
 #endif /* DEMETER_H_ */

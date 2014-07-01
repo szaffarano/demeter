@@ -49,7 +49,7 @@ uint8_t relays; /* estado de los relays, lo manejo con bitwise operations */
 volatile unsigned int ticks = 0;
 
 static void timer0_callback(void);
-static inline uint16_t get_seconds(instant_t t);
+static inline long get_seconds(instant_t t);
 static inline void update_state(void);
 
 /**
@@ -90,24 +90,24 @@ int main(void) {
 	while (1) {
 		eMBPoll();
 		update_state();
-		for (uint8_t i = 0; i < NUMBER_OF_COILS; i++) {
-			if (relays & (1 << i)) {
-				enable_relay(i+1);
-			} else {
-				disable_relay(i+1);
-			}
-		}
+
 		_delay_ms(100);
 	}
 
 	return (0);
 }
 
-void update_state(void) {
+static inline void update_state(void) {
 	DHT22_DATA_t sensor_values;
 	rtc_datetime_24h_t current_dt;
 	readDHT22(&sensor_values);
 	rtc_read(rtc, &current_dt);
+
+	event_t* events = get_events();
+	long start_secs;
+	long current_secs;
+	uint8_t i = 0;
+	uint8_t flag = 0;
 
 	state.temperature = sensor_values.raw_temperature;
 	state.humidity = sensor_values.raw_humidity;
@@ -118,7 +118,30 @@ void update_state(void) {
 					current_dt.hour, .minute = current_dt.minute, .second =
 					current_dt.second };
 
-	/* @TODO: implementar logica de activación de relays */
+	current_secs = get_seconds((instant_t ) {
+					datetime.hour,
+					datetime.minute,
+					datetime.second });
+
+	// recorro eventos para ver si tengo que activar relays
+	for (i = 0; i < MAX_EVENTS; i++) {
+		if (events[i].enabled) {
+			start_secs = get_seconds(events[i].start);
+			if (start_secs < current_secs
+					&& (start_secs + events[i].duration) > current_secs) {
+				flag |= (1 << events[i].target); /* activar el evento */
+			}
+		}
+	}
+
+	// si activaron coil, estamos dentro de un evento o presionaron pulsador
+	for (uint8_t i = 0; i < NUMBER_OF_COILS; i++) {
+		if (relays & (1 << i) || (flag & (1 << i)) || is_pushed()) {
+			enable_relay(i);
+		} else {
+			disable_relay(i);
+		}
+	}
 
 	if (ticks >= get_log_interval()) {
 		f_printf(&log_file,
@@ -126,15 +149,6 @@ void update_state(void) {
 				datetime.date, datetime.month, datetime.year, datetime.hour,
 				datetime.minute, datetime.second, state.light, state.humidity,
 				state.temperature);
-		event_t* events = get_events();
-		for (int i = 0; i < MAX_EVENTS; i++) {
-			event_t e = *events;
-			f_printf(&log_file,
-					"Evento %d: Inicio=%d:%d:%d Duracion=%d Relay=%d\n", i,
-					e.start.hour, e.start.minute, e.start.second, e.duration,
-					e.target);
-			events++;
-		}
 		f_sync(&log_file);
 		ticks = 0;
 	}
@@ -313,6 +327,6 @@ DWORD get_fattime(void) {
  * transcurrido desde las 0 hs hasta el momento del instante
  * propiamente dicho.
  */
-static inline uint16_t get_seconds(instant_t t) {
+static inline long get_seconds(instant_t t) {
 	return (t.hour * 60 * 60) + (t.minute * 60) + t.second;
 }

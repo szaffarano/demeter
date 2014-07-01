@@ -19,3 +19,4 @@ Versión preliminar con una implementación parcial del protocolo modbus.
 - Desdoblar los controles para riego tradicional (tierra) e hidropónico en forma independiente.
 - Optimizar lógica en los mapeos para ahorrarse algunos ciclos de cpu y memoria.
 - Agregar en el cliente python funciones de alto nivel (ej get_date que lea grupo de registros de la fecha en vez de llamar a read_holding_registers).
+- Refactorizar mapeo de registros modbus para optimizar bits y que no quede todo en uint16_t.
