@@ -39,7 +39,19 @@ autocompletions = {
     'read_holding_registers':[],
     'read_input_registers': [],
     'write_coils': [],
-    'write_registers': []
+    'write_registers': [],
+    
+    'get_datetime': [],
+    'set_datetime': [],
+    'get_loginterval': [],
+    'set_loginterval': [],
+    'read_event': [],
+    'write_event': [],
+    'read_events': [],
+    'disable_event': [],
+    'enable_event': [],
+    'disable_relay': [],
+    'enable_relay': [],
 }
 
 if __name__ == '__main__':
@@ -71,4 +83,4 @@ if __name__ == '__main__':
             elif isinstance(response, WriteMultipleCoilsResponse):
                 print("Se escribieron %s coils" % response.count)
             else:
-                print("Respuesta de la ejecución de %s: %s" % (command, response))
+                print response

@@ -5,6 +5,7 @@ from pymodbus.client.sync import ModbusSerialClient
 import readline
 import atexit
 import os
+from pymodbus.register_read_message import ReadRegistersResponseBase
 
 class DemeterClient(object):
     def __init__(self, unit, modbus_config):
@@ -15,7 +16,18 @@ class DemeterClient(object):
             'write_registers': self.write_holding_registers,
             'read_input_registers': self.read_input_registers,
             'read_coils': self.read_coils,
-            'write_coils': self.write_coils
+            'write_coils': self.write_coils,
+            'get_datetime': self.get_datetime,
+            'set_datetime': self.set_datetime,
+            'get_loginterval': self.get_loginterval,
+            'set_loginterval': self.set_loginterval,
+            'read_event': self.read_event,
+            'write_event': self.write_event,
+            'read_events': self.read_events,
+            'disable_event': self.disable_event,
+            'enable_event': self.enable_event,
+            'disable_relay': self.disable_relay,
+            'enable_relay': self.enable_relay,
         }
 
     def is_valid(self, command):
@@ -37,12 +49,146 @@ class DemeterClient(object):
     def write_coils(self, arguments):
         return self.client.write_coils(address=int(arguments[0]), values=[int(x) for x in arguments[1:]], unit=self.unit)
 
+    def get_datetime(self, arguments):
+        response = self.client.read_holding_registers(address=1, count=6, unit=self.unit)
+        if isinstance(response, ReadRegistersResponseBase):
+            r = response.registers
+            return "%s/%02d/%02d %02d:%02d:%02d" % (r[0], r[1], r[2], r[3], r[4], r[5])
+        return response
+
+    def set_datetime(self, arguments):
+        # yyy:mm:dd hh:mm:ss
+        if len(arguments) != 6:
+            return "Modo de uso: set_datetime <yyyy> <mm> <dd> <hh> <mm> <ss>"
+
+        for i in range(0, 6):
+            if not self.__is_number(arguments[i]):
+                return "%s: se esperaba un entero" % arguments[i]
+
+        values = [int(x) for x in arguments]
+
+        return self.client.write_registers(address=1, values=values, unit=self.unit)
+
+    def get_loginterval(self, arguments):
+        response = self.client.read_holding_registers(address=0, count=1, unit=self.unit)
+        if isinstance(response, ReadRegistersResponseBase):
+            return response.registers[0]
+        return response
+
+    def set_loginterval(self, arguments):
+        if len(arguments) != 1:
+            return "Modo de uso: set_loginterval <segunos>"
+
+        if not self.__is_number(arguments[0]):
+            return "%s: se esperaba un entero" % arguments[0]
+
+        return self.client.write_registers(address=0, values=[int(arguments[0])], unit=self.unit)
+
+    def read_event(self, arguments):
+        if len(arguments) != 1:
+            return "Modo de uso: read_event <numero de evento>"
+
+        if not self.__is_number(arguments[0]):
+            return "%s: se esperaba un entero" % arguments[0]
+
+        number = int(arguments[0])
+        response = self.client.read_holding_registers(address=number * 6 + 7, count=6, unit=self.unit)
+        if isinstance(response, ReadRegistersResponseBase):
+            return self.__print_event(number, response.registers)
+        return response
+
+    def write_event(self, arguments):
+        # nro de evento + 6 campos
+        if len(arguments) != (1 + 6):
+            return "Modo de uso: write_event <numero de evento> <hh>:<mm>:<ss> <duracion> <relay> <1|0>"
+
+        for i in range(0, 7):
+            if not self.__is_number(arguments[i]):
+                return "%s: se esperaba un entero" % arguments[i]
+
+        number = int(arguments[0])
+
+        if number not in [0, 1]:
+            return "%s: el valor debe ser cero o uno" % arguments[6]
+    
+        values = [int(x) for x in arguments[1:]]
+
+        return self.client.write_registers(address=number * 6 + 7, values=values, unit=self.unit)
+
+    def read_events(self, arguments):
+        response = self.client.read_holding_registers(address=7, count=6 * 10, unit=self.unit)
+        if isinstance(response, ReadRegistersResponseBase):
+            str = ""
+            for i in range(0, 10):
+                str += self.__print_event(i, response.registers[i * 6:(i + 1) * 6])
+                str += "\n"
+            return str
+        return response
+
+    def disable_event(self, arguments):
+        if len(arguments) != 1:
+            return "Modo de uso: disable_event <numero de evento>"
+
+        if not self.__is_number(arguments[0]):
+            return "%s: se esperaba un entero" % arguments[0]
+
+        number = int(arguments[0])
+
+        return self.client.write_registers(address=number * 6 + 7 + 5, values=[0], unit=self.unit)
+
+    def enable_event(self, arguments):
+        if len(arguments) != 1:
+            return "Modo de uso: enable_event <numero de evento>"
+
+        if not self.__is_number(arguments[0]):
+            return "%s: se esperaba un entero" % arguments[0]
+
+        number = int(arguments[0])
+
+        return self.client.write_registers(address=number * 6 + 7 + 5, values=[1], unit=self.unit)
+
+    def disable_relay(self, arguments):
+        if len(arguments) != 1:
+            return "Modo de uso: disable_relay <numero de relay>"
+
+        if not self.__is_number(arguments[0]):
+            return "%s: se esperaba un entero" % arguments[0]
+
+        number = int(arguments[0])
+        if number not in [0, 1]:
+            return "%d: solo hay dos relays" % number
+        
+        return self.client.write_coils(address=number, values=[0], unit=self.unit)
+
+    def enable_relay(self, arguments):
+        if len(arguments) != 1:
+            return "Modo de uso: disable_relay <numero de relay>"
+
+        if not self.__is_number(arguments[0]):
+            return "%s: se esperaba un entero" % arguments[0]
+
+        number = int(arguments[0])
+        if number not in [0, 1]:
+            return "%d: solo hay dos relays" % number
+
+        return self.client.write_coils(address=number, values=[1], unit=self.unit)
+
     def dummy(self, arguments):
-        print "funcion invalida"
         return None
 
     def execute(self, command, arguments):
         return self.valid_commands.get(command, self.dummy)(arguments)
+
+    def __print_event(self, number, data):
+        return "Evento #%d (%s) => Inicia a las %02d:%02d:%02d hs., dura: %d segs. y ejecuta en relay #%d" % (
+                                    number, ("habilitado" if data[5] != 0 else "deshabilitado"), data[0],
+                                    data[1], data[2], data[3], data[4])
+    def __is_number(self, str):
+        try:
+            int(str)
+        except ValueError:
+            return False
+        return True
 
 class Console(object):
     def __init__(self, autocompletions, history_file):
