@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 static inline void delay_ms(uint16_t);
+static uint8_t pushed;
 
 void ports_init(void) {
 	// interrupciones Pin Change
@@ -26,11 +27,11 @@ void ports_init(void) {
 
 	// relays como output, por default estan low, pongo en high antes de habilitar
 	// para evitar que se activen por unos ciclos de cpu
-	RELAY1_PORT |= (1 << RELAY1); // RELAY1 high para evitar que se active de entrada
-	RELAY1_DDR |= (1 << RELAY1); // RELAY1 como output
+	RELAY0_PORT |= (1 << RELAY0); // RELAY0 high para evitar que se active de entrada
+	RELAY0_DDR |= (1 << RELAY0); // RELAY0 como output
 
-	RELAY2_PORT |= (1 << RELAY2); // RELAY2 en high para evitar que se active de entrada
-	RELAY2_DDR |= (1 << RELAY2); // RELAY2 como output
+	RELAY1_PORT |= (1 << RELAY1); // RELAY1 en high para evitar que se active de entrada
+	RELAY1_DDR |= (1 << RELAY1); // RELAY1 como output
 
 	// led de status
 	LED_DDR |= _BV(LED);
@@ -38,24 +39,28 @@ void ports_init(void) {
 
 void enable_relay(uint8_t number) {
 	switch (number) {
+	case 0:
+		RELAY0_PORT &= ~(1 << RELAY0);
+		break;
 	case 1:
 		RELAY1_PORT &= ~(1 << RELAY1);
-		break;
-	case 2:
-		RELAY2_PORT &= ~(1 << RELAY2);
 		break;
 	}
 }
 
 void disable_relay(uint8_t number) {
 	switch (number) {
+	case 0:
+		RELAY0_PORT |= (1 << RELAY0);
+		break;
 	case 1:
 		RELAY1_PORT |= (1 << RELAY1);
 		break;
-	case 2:
-		RELAY2_PORT |= (1 << RELAY2);
-		break;
 	}
+}
+
+uint8_t is_pushed(void) {
+	return pushed;
 }
 
 void blinkenlight(uint8_t times, uint8_t delay) {
@@ -74,7 +79,9 @@ ISR(PCINT2_vect) {
 	// si el boton esta presionado, el bit en PUSH_PORT es low
 	if ((PUSH_PORT & (1 << PUSH)) == 0) {
 		enable_relay(1);
+		pushed = 1;
 	} else {
+		pushed = 0;
 		disable_relay(1);
 	}
 }

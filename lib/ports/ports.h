@@ -12,7 +12,7 @@ void ports_init(void);
 
 void enable_relay(uint8_t number);
 void disable_relay(uint8_t number);
-
+uint8_t is_pushed(void);
 void blinkenlight(uint8_t times, uint8_t delay);
 
 #endif /* PORTS_H_ */
