@@ -290,6 +290,7 @@ eMBErrorCode eMBRegCoilsCB(UCHAR * pucRegBuffer, USHORT usAddress,
 			usAddress++;
 		}
 	} else {
+		*pucRegBuffer <<= usAddress;
 		while (usNCoils > 0) {
 			if ((*pucRegBuffer & (1 << usAddress))) {
 				relays |= (1 << usAddress);
