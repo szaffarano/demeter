@@ -34,20 +34,64 @@ class DemeterClient(object):
         return command in self.valid_commands
 
     def read_holding_registers(self, arguments):
-        return self.client.read_holding_registers(address=int(arguments[0]), count=int(arguments[1]), unit=self.unit)
+        if len(arguments) != 2:
+            return "Modo de uso: read_holding_registers <start-address> <registers>"
+
+        for i in range(0, len(arguments)):
+            if not self.__is_number(arguments[i]):
+                return "%s: se esperaba un entero" % arguments[i]
+
+        values = [int(x) for x in arguments]
+
+        return self.client.read_holding_registers(address=values[0], count=values[1], unit=self.unit)
 
     def write_holding_registers(self, arguments):
-        print "write_registers(%s, %s)" % (arguments[0], [int(x) for x in arguments[1:]])
-        return self.client.write_registers(int(arguments[0]), [int(x) for x in arguments[1:]], unit=self.unit)
+        if len(arguments) < 2:
+            return "Modo de uso: write_holding_registers <start-address> <register-1> <register-2> ... <register-n>"
+
+        for i in range(0, len(arguments)):
+            if not self.__is_number(arguments[i]):
+                return "%s: se esperaba un entero" % arguments[i]
+
+        values = [int(x) for x in arguments]
+        
+        return self.client.write_registers(values[0], values[1:], unit=self.unit)
 
     def read_input_registers(self, arguments):
-        return self.client.read_input_registers(address=int(arguments[0]), count=int(arguments[1]), unit=self.unit)
+        if len(arguments) != 2:
+            return "Modo de uso: read_input_registers <start-address> <registers>"
+
+        for i in range(0, len(arguments)):
+            if not self.__is_number(arguments[i]):
+                return "%s: se esperaba un entero" % arguments[i]
+
+        values = [int(x) for x in arguments]
+        
+        return self.client.read_input_registers(address=values[0], count=values[1], unit=self.unit)
 
     def read_coils(self, arguments):
-        return self.client.read_coils(address=int(arguments[0]), count=int(arguments[1]), unit=self.unit)
+        if len(arguments) != 2:
+            return "Modo de uso: read_coils <start-address> <coils>"
+
+        for i in range(0, len(arguments)):
+            if not self.__is_number(arguments[i]):
+                return "%s: se esperaba un entero" % arguments[i]
+
+        values = [int(x) for x in arguments]
+        
+        return self.client.read_coils(address=values[0], count=values[1], unit=self.unit)
 
     def write_coils(self, arguments):
-        return self.client.write_coils(address=int(arguments[0]), values=[int(x) for x in arguments[1:]], unit=self.unit)
+        if len(arguments) < 2:
+            return "Modo de uso: write_coils <start-address> <bit-1> <bit-2> ... <bit-n>"
+
+        for i in range(0, len(arguments)):
+            if not self.__is_number(arguments[i]):
+                return "%s: se esperaba un entero" % arguments[i]
+
+        values = [int(x) for x in arguments]
+        
+        return self.client.write_coils(address=values[0], values=values[1:], unit=self.unit)
 
     def get_datetime(self, arguments):
         response = self.client.read_holding_registers(address=1, count=6, unit=self.unit)
