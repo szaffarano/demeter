@@ -46,12 +46,16 @@ state_t state;
 datetime_t datetime;
 uint8_t relays; /* estado de los relays, lo manejo con bitwise operations */
 
+// "yyyymmdd.log"
+static char log_filename[13] = "nn.log";
+static char last_logfilename[13] = "empty.log";
+
 volatile unsigned int ticks = 0;
 
 static void timer0_callback(void);
 static inline long get_seconds(instant_t t);
 static inline void update_state(void);
-
+static inline void update_log_filename(void);
 /**
  * MCU: Atmega328
  * Fuses: Oscilador interno a 8 Mhz (sin dividir por 8)
@@ -70,7 +74,7 @@ int main(void) {
 	rtc_clock_start(rtc);
 
 	eMBInit(MB_RTU, 0x03, 0, 9600, MB_PAR_NONE);
-	eMBSetSlaveID(0x3, TRUE, (UCHAR*) "pepe", 4);
+	eMBSetSlaveID(0x3, TRUE, (UCHAR*) "demeter", 8);
 	eMBEnable();
 
 	blinkenlight(5, 100);
@@ -80,12 +84,7 @@ int main(void) {
 	ports_init();
 
 	f_mount(&fs, "", 0);
-	if (f_open(&log_file, LOG, FA_OPEN_ALWAYS | FA_WRITE) == FR_OK) {
-		if (f_lseek(&log_file, f_size(&log_file)) == FR_OK) {
-			LED_PORT |= _BV(LED);
-			f_sync(&log_file);
-		}
-	}
+	update_log_filename();
 
 	while (1) {
 		eMBPoll();
@@ -144,9 +143,11 @@ static inline void update_state(void) {
 	}
 
 	if (ticks >= get_log_interval()) {
-		f_printf(&log_file,
-				"%02d/%02d/%04d %02d:%02d:%02d: Luz=%d Humedad=%d %% Temperatura= %d *C\n",
-				datetime.date, datetime.month, datetime.year, datetime.hour,
+		update_log_filename(); /* si cambio el dia y hay que hacer roll del archivo */
+
+		//yyyyMMddhhmmss	light	humidity	temperature
+		f_printf(&log_file, "%04d%02d%02d%02d%02d%02d\t%d\t%d\t%d\n",
+				datetime.year, datetime.month, datetime.date, datetime.hour,
 				datetime.minute, datetime.second, state.light, state.humidity,
 				state.temperature);
 		f_sync(&log_file);
@@ -330,4 +331,20 @@ DWORD get_fattime(void) {
  */
 static inline long get_seconds(instant_t t) {
 	return (t.hour * 60 * 60) + (t.minute * 60) + t.second;
+}
+
+static inline void update_log_filename(void) {
+	rtc_datetime_24h_t dt;
+	rtc_read(rtc, &dt);
+	sprintf(log_filename, "%04d%02d%02d.log", dt.year, dt.month, dt.date);
+	if (strcmp(log_filename, last_logfilename) != 0) {
+		f_close(&log_file);
+		if (f_open(&log_file, log_filename, FA_OPEN_ALWAYS | FA_WRITE)
+				== FR_OK) {
+			if (f_lseek(&log_file, f_size(&log_file)) == FR_OK) {
+				f_sync(&log_file);
+			}
+		}
+		strcpy(last_logfilename, log_filename);
+	}
 }
