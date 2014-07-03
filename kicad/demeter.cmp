@@ -1,0 +1,94 @@
+Cmp-Mod V01 Created by Cvpcb (2014-07-02 BZR 4969)-product   date = jue 03 jul 2014 00:13:17 ART
+
+BeginCmp
+TimeStamp = /53B4ACE7;
+Reference = C1;
+ValeurCmp = C;
+IdModule  = Capacitors_ThroughHole:Capacitor3MMDiscRM2.5;
+EndCmp
+
+BeginCmp
+TimeStamp = /53B4B6FF;
+Reference = D1;
+ValeurCmp = YELLOW;
+IdModule  = Diodes_ThroughHole:Diode_LED_3mm_round_vertical;
+EndCmp
+
+BeginCmp
+TimeStamp = /53B4A8D6;
+Reference = IC1;
+ValeurCmp = ATMEGA328-P;
+IdModule  = Sockets_DIP:DIP-28__300;
+EndCmp
+
+BeginCmp
+TimeStamp = /53B4C3F1;
+Reference = K1;
+ValeurCmp = DHT22;
+IdModule  = Connect:SIL-3;
+EndCmp
+
+BeginCmp
+TimeStamp = /53B4B248;
+Reference = P1;
+ValeurCmp = POWER;
+IdModule  = Connect:SIL-2;
+EndCmp
+
+BeginCmp
+TimeStamp = /53B4BD43;
+Reference = P2;
+ValeurCmp = RELAYS;
+IdModule  = Connect:SIL-4;
+EndCmp
+
+BeginCmp
+TimeStamp = /53B4DC46;
+Reference = P3;
+ValeurCmp = SD_RTC;
+IdModule  = Connect:VASCH5x2;
+EndCmp
+
+BeginCmp
+TimeStamp = /53B4D113;
+Reference = P4;
+ValeurCmp = LDR;
+IdModule  = Connect:SIL-2;
+EndCmp
+
+BeginCmp
+TimeStamp = /53B4CCCC;
+Reference = P5;
+ValeurCmp = RS232;
+IdModule  = Connect:SIL-4;
+EndCmp
+
+BeginCmp
+TimeStamp = /53B4B74B;
+Reference = R1;
+ValeurCmp = 330R;
+IdModule  = Resistors_ThroughHole:Resistor_Horizontal_RM10mm;
+EndCmp
+
+BeginCmp
+TimeStamp = /53B4C757;
+Reference = R2;
+ValeurCmp = 10K;
+IdModule  = Resistors_ThroughHole:Resistor_Horizontal_RM10mm;
+EndCmp
+
+BeginCmp
+TimeStamp = /53B4D572;
+Reference = R3;
+ValeurCmp = 10K;
+IdModule  = Resistors_ThroughHole:Resistor_Horizontal_RM10mm;
+EndCmp
+
+BeginCmp
+TimeStamp = /53B4BA8E;
+Reference = SW1;
+ValeurCmp = PUSH;
+IdModule  = Connect:SIL-2;
+EndCmp
+
+EndListe
