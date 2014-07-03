@@ -53,10 +53,10 @@ the values are required leave equal to 0.
 #define DHT22_DATA_BIT_COUNT 40
 
 /* Configure port and pin */
-#define DHT22_PIN PD4
-#define DHT22_DDR DDRD
-#define DHT22_PORT_OUT PORTD
-#define DHT22_PORT_IN PIND
+#define DHT22_PIN	PD4
+#define DHT22_DDR	DDRD
+#define DHT22_PORT_OUT	PORTD
+#define DHT22_PORT_IN	PIND
 
 typedef enum
 {

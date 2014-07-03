@@ -12,11 +12,11 @@
 
 // Relays
 #define  RELAY0			PB6
-#define  RELAY0_PORT	PORTB
+#define  RELAY0_PORT		PORTB
 #define  RELAY0_DDR		DDRB
 
 #define  RELAY1			PB7
-#define  RELAY1_PORT	PORTB
+#define  RELAY1_PORT		PORTB
 #define  RELAY1_DDR		DDRB
 
 // Pulsador
@@ -25,14 +25,12 @@
 #define  PUSH_DDR		DDRD
 
 // UART
-#define UART_BAUD_RATE	9600
+#define UART_BAUD_RATE		9600
 
 // sensor luminico
-#define	PHOTORESISTOR	PC0
+#define	PHOTORESISTOR		PC0
 
-#define	LOG				"clima.log"
-
-#define	LED				PB0
+#define	LED			PB0
 #define	LED_PORT		PORTB
 #define LED_DDR			DDRB
 
