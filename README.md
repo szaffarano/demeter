@@ -11,7 +11,7 @@ Versión preliminar con una implementación parcial del protocolo modbus.
 - ~~Terminar de mapear registros modbus a sensores, parámetros y comandos del controlador.~~
 - Implementar servicio rest para interactuar remotamente.
 - Realizar prueba de concepto para usar NRF24L01+ en lugar del módulo bluetooth.
-- Documentar esquemáticos en kicad.
+- ~~Documentar esquemáticos en kicad~~.
 - Armar una webapp para administrar el controlador.
 - Incorporar interrupción watchdog para preveer posibles fallos.
 - Implementar los relays usando triacs+opto.
