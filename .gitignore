@@ -6,3 +6,6 @@ Release
 **/*hex
 .pydevproject
 *.pyc
+*.bin
+*-bak
+*bak
