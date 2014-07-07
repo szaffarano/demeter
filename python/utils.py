@@ -152,10 +152,9 @@ class DemeterClient(object):
 
         number = int(arguments[0])
 
-        if number not in [0, 1]:
-            return "%s: el valor debe ser cero o uno" % arguments[6]
-    
         values = [int(x) for x in arguments[1:]]
+        if values[5] not in [0,1]:
+            return "%s: el valor debe ser cero o uno" % values[5]
 
         return self.client.write_registers(address=number * 6 + 7, values=values, unit=self.unit)
 
