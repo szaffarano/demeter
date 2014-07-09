@@ -47,11 +47,16 @@ autocompletions = {
     'set_loginterval': [],
     'read_event': [],
     'write_event': [],
+    'disable_event': [],
+    'enable_event': [],
     'read_events': [],
     'disable_event': [],
     'enable_event': [],
     'disable_relay': [],
     'enable_relay': [],
+    'temperatura': [],
+    'humedad': [],
+    'luz': [],
 }
 
 if __name__ == '__main__':

@@ -23,11 +23,16 @@ class DemeterClient(object):
             'set_loginterval': self.set_loginterval,
             'read_event': self.read_event,
             'write_event': self.write_event,
+            'enable_event': self.enable_event,
+            'disable_event': self.disable_event,
             'read_events': self.read_events,
             'disable_event': self.disable_event,
             'enable_event': self.enable_event,
             'disable_relay': self.disable_relay,
             'enable_relay': self.enable_relay,
+            'temperatura': self.get_temperature,
+            'humedad': self.get_humidity,
+            'luz': self.get_light,
         }
 
     def is_valid(self, command):
@@ -56,6 +61,24 @@ class DemeterClient(object):
         values = [int(x) for x in arguments]
         
         return self.client.write_registers(values[0], values[1:], unit=self.unit)
+
+    def get_temperature(self, arguments):
+        value = self.client.read_input_registers(address=0, count=1, unit=self.unit)
+        if isinstance(value, ReadRegistersResponseBase):
+            value = "%d,%d °C" % (value.registers[0]/10, value.registers[0]%10)
+        return value
+
+    def get_humidity(self, arguments):
+        value = self.client.read_input_registers(address=1, count=1, unit=self.unit)
+        if isinstance(value, ReadRegistersResponseBase):
+            value = "%d,%d %%" % (value.registers[0]/10, value.registers[0]%10)
+        return value
+
+    def get_light(self, arguments):
+        value = self.client.read_input_registers(address=2, count=1, unit=self.unit)
+        if isinstance(value, ReadRegistersResponseBase):
+            value = value.registers[0]
+        return value
 
     def read_input_registers(self, arguments):
         if len(arguments) != 2:
@@ -157,6 +180,30 @@ class DemeterClient(object):
             return "%s: el valor debe ser cero o uno" % values[5]
 
         return self.client.write_registers(address=number * 6 + 7, values=values, unit=self.unit)
+
+    def disable_event(self, arguments):
+        # nro de evento
+        if len(arguments) != 1:
+            return "Modo de uso: disable_event <numero de evento>"
+
+        if not self.__is_number(arguments[0]):
+            return "%s: se esperaba un entero" % arguments[i]
+
+        number = int(arguments[0])
+
+        return self.client.write_registers(address=number * 6 + 5, values=[0], unit=self.unit)
+
+    def enable_event(self, arguments):
+        # nro de evento
+        if len(arguments) != 1:
+            return "Modo de uso: disable_event <numero de evento>"
+
+        if not self.__is_number(arguments[0]):
+            return "%s: se esperaba un entero" % arguments[i]
+
+        number = int(arguments[0])
+
+        return self.client.write_registers(address=number * 6 + 5, values=[0], unit=self.unit)
 
     def read_events(self, arguments):
         response = self.client.read_holding_registers(address=7, count=6 * 10, unit=self.unit)
