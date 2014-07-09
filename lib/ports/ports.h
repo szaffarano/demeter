@@ -14,5 +14,6 @@ void enable_relay(uint8_t number);
 void disable_relay(uint8_t number);
 uint8_t is_pushed(void);
 void blinkenlight(uint8_t times, uint8_t delay);
+uint8_t is_relay_enabled(uint8_t relay_number);
 
 #endif /* PORTS_H_ */

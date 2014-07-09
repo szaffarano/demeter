@@ -146,10 +146,10 @@ static inline void update_state(void) {
 		update_log_filename(); /* si cambio el dia y hay que hacer roll del archivo */
 
 		//yyyyMMddhhmmss	light	humidity	temperature
-		f_printf(&log_file, "%04d%02d%02d%02d%02d%02d\t%d\t%d\t%d\n",
+		f_printf(&log_file, "%04d%02d%02d%02d%02d%02d\t%d\t%d\t%d\t%d\t%d\n",
 				datetime.year, datetime.month, datetime.date, datetime.hour,
 				datetime.minute, datetime.second, state.light, state.humidity,
-				state.temperature);
+				state.temperature, is_relay_enabled(0), is_relay_enabled(1));
 		f_sync(&log_file);
 		ticks = 0;
 	}

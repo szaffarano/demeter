@@ -14,6 +14,7 @@
 
 static inline void delay_ms(uint16_t);
 static uint8_t pushed;
+static uint8_t relays;
 
 void ports_init(void) {
 	// interrupciones Pin Change
@@ -35,15 +36,19 @@ void ports_init(void) {
 
 	// led de status
 	LED_DDR |= _BV(LED);
+
+	relays = 0;
 }
 
 void enable_relay(uint8_t number) {
 	switch (number) {
 	case 0:
 		RELAY0_PORT &= ~(1 << RELAY0);
+		relays |= (1 << number);
 		break;
 	case 1:
 		RELAY1_PORT &= ~(1 << RELAY1);
+		relays |= (1 << number);
 		break;
 	}
 }
@@ -52,15 +57,21 @@ void disable_relay(uint8_t number) {
 	switch (number) {
 	case 0:
 		RELAY0_PORT |= (1 << RELAY0);
+		relays &= ~(1 << number);
 		break;
 	case 1:
 		RELAY1_PORT |= (1 << RELAY1);
+		relays &= ~(1 << number);
 		break;
 	}
 }
 
 uint8_t is_pushed(void) {
 	return pushed;
+}
+
+uint8_t is_relay_enabled(uint8_t relay_number) {
+	return (relays & (1 << relay_number)) ? 1 : 0;
 }
 
 void blinkenlight(uint8_t times, uint8_t delay) {
