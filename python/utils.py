@@ -29,9 +29,9 @@ class DemeterClient(object):
             'enable_event': self.enable_event,
             'disable_relay': self.disable_relay,
             'enable_relay': self.enable_relay,
-            'temperatura': self.get_temperature,
-            'humedad': self.get_humidity,
-            'luz': self.get_light,
+            'temperature': self.get_temperature,
+            'humidity': self.get_humidity,
+            'light': self.get_light,
         }
 
     def is_valid(self, command):
@@ -40,12 +40,12 @@ class DemeterClient(object):
     def read_holding_registers(self, arguments):
         if len(arguments) != 2:
             return """
-               Modo de uso: read_holding_registers <start-address> <registers>
+               Usage: read_holding_registers <start-address> <registers>
             """
 
         for i in range(0, len(arguments)):
             if not self.__is_number(arguments[i]):
-                return "%s: se esperaba un entero" % arguments[i]
+                return "%s: should be an integer" % arguments[i]
 
         values = [int(x) for x in arguments]
 
@@ -55,12 +55,12 @@ class DemeterClient(object):
     def write_holding_registers(self, arguments):
         if len(arguments) < 2:
             return """
-              Modo de uso: write_holding_registers <start-address> <reg-1> <reg-2> ...  <reg-n>
+              Usage: write_holding_registers <start-address> <reg-1> <reg-2> ...  <reg-n>
             """   # noqa: E501
 
         for i in range(0, len(arguments)):
             if not self.__is_number(arguments[i]):
-                return "%s: se esperaba un entero" % arguments[i]
+                return "%s: should be an integer" % arguments[i]
 
         values = [int(x) for x in arguments]
 
@@ -92,11 +92,11 @@ class DemeterClient(object):
 
     def read_input_registers(self, arguments):
         if len(arguments) != 2:
-            return "Modo de uso: read_input_registers <start-address> <regs>"
+            return "Usage: read_input_registers <start-address> <regs>"
 
         for i in range(0, len(arguments)):
             if not self.__is_number(arguments[i]):
-                return "%s: se esperaba un entero" % arguments[i]
+                return "%s: should be an integer" % arguments[i]
 
         values = [int(x) for x in arguments]
 
@@ -105,11 +105,11 @@ class DemeterClient(object):
 
     def read_coils(self, arguments):
         if len(arguments) != 2:
-            return "Modo de uso: read_coils <start-address> <coils>"
+            return "Usage: read_coils <start-address> <coils>"
 
         for i in range(0, len(arguments)):
             if not self.__is_number(arguments[i]):
-                return "%s: se esperaba un entero" % arguments[i]
+                return "%s: should be an integer" % arguments[i]
 
         values = [int(x) for x in arguments]
 
@@ -118,11 +118,11 @@ class DemeterClient(object):
 
     def write_coils(self, arguments):
         if len(arguments) < 2:
-            return "Modo de uso: write_coils <start-address> <bit-1> <bit-2> ... <bit-n>"  # noqa: E501
+            return "Usage: write_coils <start-address> <bit-1> <bit-2> ... <bit-n>"  # noqa: E501
 
         for i in range(0, len(arguments)):
             if not self.__is_number(arguments[i]):
-                return "%s: se esperaba un entero" % arguments[i]
+                return "%s: should be an integer" % arguments[i]
 
         values = [int(x) for x in arguments]
 
@@ -141,11 +141,11 @@ class DemeterClient(object):
     def set_datetime(self, arguments):
         # yyy:mm:dd hh:mm:ss
         if len(arguments) != 6:
-            return "Modo de uso: set_datetime <yyyy> <mm> <dd> <hh> <mm> <ss>"
+            return "Usage: set_datetime <yyyy> <mm> <dd> <hh> <mm> <ss>"
 
         for i in range(0, 6):
             if not self.__is_number(arguments[i]):
-                return "%s: se esperaba un entero" % arguments[i]
+                return "%s: should be an integer" % arguments[i]
 
         values = [int(x) for x in arguments]
 
@@ -161,20 +161,20 @@ class DemeterClient(object):
 
     def set_loginterval(self, arguments):
         if len(arguments) != 1:
-            return "Modo de uso: set_loginterval <segunos>"
+            return "Usage: set_loginterval <segunos>"
 
         if not self.__is_number(arguments[0]):
-            return "%s: se esperaba un entero" % arguments[0]
+            return "%s: should be an integer" % arguments[0]
 
         return self.client.write_registers(
             address=0, values=[int(arguments[0])], unit=self.unit)
 
     def read_event(self, arguments):
         if len(arguments) != 1:
-            return "Modo de uso: read_event <numero de evento>"
+            return "Usage: read_event <event number>"
 
         if not self.__is_number(arguments[0]):
-            return "%s: se esperaba un entero" % arguments[0]
+            return "%s: should be an integer" % arguments[0]
 
         number = int(arguments[0])
         response = self.client.read_holding_registers(
@@ -184,30 +184,30 @@ class DemeterClient(object):
         return response
 
     def write_event(self, arguments):
-        # nro de evento + 6 campos
+        # event number + 6 fields
         if len(arguments) != (1 + 6):
-            return "Modo de uso: write_event <numero de evento> <hh>:<mm>:<ss> <duracion> <relay> <1|0>"  # noqa: E501
+            return "Usage: write_event <event number> <hh>:<mm>:<ss> <duracion> <relay> <1|0>"  # noqa: E501
 
         for i in range(0, 7):
             if not self.__is_number(arguments[i]):
-                return "%s: se esperaba un entero" % arguments[i]
+                return "%s: should be an integer" % arguments[i]
 
         number = int(arguments[0])
 
         values = [int(x) for x in arguments[1:]]
         if values[5] not in [0, 1]:
-            return "%s: el valor debe ser cero o uno" % values[5]
+            return "%s: the value should be 0 or 1" % values[5]
 
         return self.client.write_registers(
                 address=number * 6 + 7, values=values, unit=self.unit)
 
     def disable_event(self, arguments):
-        # nro de evento
+        # event number
         if len(arguments) != 1:
-            return "Modo de uso: disable_event <numero de evento>"
+            return "Usage: disable_event <event number>"
 
         if not self.__is_number(arguments[0]):
-            return "%s: se esperaba un entero" % arguments[arguments[0]]
+            return "%s: should be an integer" % arguments[arguments[0]]
 
         number = int(arguments[0])
 
@@ -215,12 +215,12 @@ class DemeterClient(object):
                 address=number * 6 + 5, values=[0], unit=self.unit)
 
     def enable_event(self, arguments):
-        # nro de evento
+        # event number
         if len(arguments) != 1:
-            return "Modo de uso: disable_event <numero de evento>"
+            return "Usage: disable_event <event number>"
 
         if not self.__is_number(arguments[0]):
-            return "%s: se esperaba un entero" % arguments[arguments[0]]
+            return "%s: should be an integer" % arguments[arguments[0]]
 
         number = int(arguments[0])
 
@@ -241,28 +241,28 @@ class DemeterClient(object):
 
     def disable_relay(self, arguments):
         if len(arguments) != 1:
-            return "Modo de uso: disable_relay <numero de relay>"
+            return "Usage: disable_relay <relay number>"
 
         if not self.__is_number(arguments[0]):
-            return "%s: se esperaba un entero" % arguments[0]
+            return "%s: should be an integer" % arguments[0]
 
         number = int(arguments[0])
         if number not in [0, 1]:
-            return "%d: solo hay dos relays" % number
+            return "%d: there are only two relays available" % number
 
         return self.client.write_coils(
                 address=number, values=[0], unit=self.unit)
 
     def enable_relay(self, arguments):
         if len(arguments) != 1:
-            return "Modo de uso: disable_relay <numero de relay>"
+            return "Usage: disable_relay <relay number>"
 
         if not self.__is_number(arguments[0]):
-            return "%s: se esperaba un entero" % arguments[0]
+            return "%s: should be an integer" % arguments[0]
 
         number = int(arguments[0])
         if number not in [0, 1]:
-            return "%d: solo hay dos relays" % number
+            return "%d: there are only two relays available" % number
 
         return self.client.write_coils(
                 address=number, values=[1], unit=self.unit)
@@ -274,12 +274,12 @@ class DemeterClient(object):
         return self.valid_commands.get(command, self.dummy)(arguments)
 
     def __print_event(self, number, data):
-        state = "habilitado" if data[5] != 0 else "deshabilitado"
-        date = "%02d:%02d:%02d" % (data[0], data[1], data[2])
-        duration = data[3]
+        state = "enabled" if data[5] != 0 else "disabled"
+        date = ("%02d:%02d:%02d" % (data[0], data[1], data[2])).rjust(8)
+        duration = str(data[3]).rjust(5)
         relay = data[4]
 
-        return f"Evento #${number} ({state}) => Inicia a las ${date} hs., dura: %{duration} secs y ejecuta en relay #{relay}"  # noqa: E501
+        return f"Event #{number} [{state.rjust(8)}]: Begin at {date} during {duration} seconds driven through relay #{relay}"  # noqa: E501
 
     def __is_number(self, str):
         try:

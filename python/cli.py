@@ -42,9 +42,9 @@ autocompletions = {
     'enable_event': [],
     'disable_relay': [],
     'enable_relay': [],
-    'temperatura': [],
-    'humedad': [],
-    'luz': [],
+    'temperature': [],
+    'humidity': [],
+    'light': [],
 }
 
 
@@ -106,24 +106,24 @@ if __name__ == '__main__':
         arguments = cli[1:] if len(cli) > 1 else []
 
         if not demeter.is_valid(command):
-            print("%s: comando desconocido." % command)
+            print("%s: unknown command." % command)
             continue
 
         response = demeter.execute(command, arguments)
         if response is None:
-            print("respuesta nula")
+            print("empty response")
         elif isinstance(response, ExceptionResponse):
-            print("Error en la ejecución: %s" % response)
+            print("Execution error: %s" % response)
         else:
             if isinstance(response, WriteMultipleRegistersResponse):
-                print("Se escribieron %s registros" % response.count)
+                print("%s registers have been written" % response.count)
             elif isinstance(response, ReadRegistersResponseBase):
-                print("Se leyeron %s registros: %s" %
+                print("%s registers have been read: %s" %
                       (len(response.registers), response.registers))
             elif isinstance(response, ReadBitsResponseBase):
-                print("Se leyeron %s coils: %s" %
+                print("%s coils have been read: %s" %
                       (len(response.bits), response.bits))
             elif isinstance(response, WriteMultipleCoilsResponse):
-                print("Se escribieron %s coils" % response.count)
+                print("%s coils have been written" % response.count)
             else:
                 print(response)
