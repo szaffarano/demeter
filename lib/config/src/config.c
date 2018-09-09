@@ -5,7 +5,7 @@
  *      Author: sebas
  */
 #include <avr/eeprom.h>
-#include "config/config.h"
+#include "config.h"
 #include <string.h>
 
 static event_t EEMEM ee_events[MAX_EVENTS];

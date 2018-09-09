@@ -4,7 +4,6 @@
  *  Created on: 03/06/2014
  *      Author: sebas
  */
-#include <demeter.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "timer.h"

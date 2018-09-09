@@ -17,7 +17,7 @@
 
 */
 
-#include <i2c/i2c.h>
+#include <i2c.h>
 #include "rtc_ds1307.h"
 
 uint8_t rtc_ds1307_hardware_init(void)
