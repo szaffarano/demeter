@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import argparse
+
 from utils import Console, DemeterClient
 from pymodbus.pdu import ExceptionResponse
 from pymodbus.register_write_message import WriteMultipleRegistersResponse
@@ -14,23 +16,11 @@ HISTORY_FILENAME = '/tmp/.modbus_history'
 
 MODBUS_CLIENT_ID = 0x03
 
-
 # Configuración del log
 logging.basicConfig(
     filename=LOG_FILENAME,
     level=logging.DEBUG,
 )
-
-# Configuración de Modbus
-modbus_config = {
-     'method': 'rtu',
-     'port': '/dev/rfcomm2',
-     'stopbits': 2,
-     'bytesize': 8,
-     'parity': 'N',
-     'baudrate': 9600,
-     'timeout': 1
-}
 
 # Opciones para el autocompletado
 autocompletions = {
@@ -57,7 +47,55 @@ autocompletions = {
     'luz': [],
 }
 
+
+def __configure_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-d", "--device",
+                        help="Path to the bluetooth device to use",
+                        default="/dev/rfcomm1")
+
+    parser.add_argument("-m", "--method",
+                        help="Connection method",
+                        default="rtu")
+
+    parser.add_argument("-s", "--stop",
+                        help="Stop bits",
+                        default=2)
+
+    parser.add_argument("-S", "--size",
+                        help="Byte size",
+                        default=8)
+
+    parser.add_argument("-p", "--parity",
+                        help="If it use parity",
+                        default="N")
+
+    parser.add_argument("-b", "--bauds",
+                        help="Baud rate",
+                        default=9600)
+
+    parser.add_argument("-t", "--timeout",
+                        help="Timeout",
+                        default=1)
+    return parser
+
+
 if __name__ == '__main__':
+    parser = __configure_args()
+    args = parser.parse_args()
+
+    # Configuración de Modbus
+    modbus_config = {
+        'method': args.method,
+        'port': args.device,
+        'stopbits': int(args.stop),
+        'bytesize': int(args.size),
+        'parity': args.parity,
+        'baudrate': int(args.bauds),
+        'timeout': int(args.timeout)
+    }
+
     demeter = DemeterClient(MODBUS_CLIENT_ID, modbus_config)
     console = Console(autocompletions, HISTORY_FILENAME)
 
