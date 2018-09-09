@@ -7,6 +7,7 @@ import atexit
 import os
 from pymodbus.register_read_message import ReadRegistersResponseBase
 
+
 class DemeterClient(object):
     def __init__(self, unit, modbus_config):
         self.client = ModbusSerialClient(**modbus_config)
@@ -23,8 +24,6 @@ class DemeterClient(object):
             'set_loginterval': self.set_loginterval,
             'read_event': self.read_event,
             'write_event': self.write_event,
-            'enable_event': self.enable_event,
-            'disable_event': self.disable_event,
             'read_events': self.read_events,
             'disable_event': self.disable_event,
             'enable_event': self.enable_event,
@@ -40,7 +39,9 @@ class DemeterClient(object):
 
     def read_holding_registers(self, arguments):
         if len(arguments) != 2:
-            return "Modo de uso: read_holding_registers <start-address> <registers>"
+            return """
+               Modo de uso: read_holding_registers <start-address> <registers>
+            """
 
         for i in range(0, len(arguments)):
             if not self.__is_number(arguments[i]):
@@ -48,49 +49,59 @@ class DemeterClient(object):
 
         values = [int(x) for x in arguments]
 
-        return self.client.read_holding_registers(address=values[0], count=values[1], unit=self.unit)
+        return self.client.read_holding_registers(
+              address=values[0], count=values[1], unit=self.unit)
 
     def write_holding_registers(self, arguments):
         if len(arguments) < 2:
-            return "Modo de uso: write_holding_registers <start-address> <register-1> <register-2> ... <register-n>"
+            return """
+              Modo de uso: write_holding_registers <start-address> <reg-1> <reg-2> ...  <reg-n>
+            """   # noqa: E501
 
         for i in range(0, len(arguments)):
             if not self.__is_number(arguments[i]):
                 return "%s: se esperaba un entero" % arguments[i]
 
         values = [int(x) for x in arguments]
-        
-        return self.client.write_registers(values[0], values[1:], unit=self.unit)
+
+        return self.client.write_registers(
+              values[0], values[1:], unit=self.unit)
 
     def get_temperature(self, arguments):
-        value = self.client.read_input_registers(address=0, count=1, unit=self.unit)
+        value = self.client.read_input_registers(
+              address=0, count=1, unit=self.unit)
         if isinstance(value, ReadRegistersResponseBase):
-            value = "%d,%d °C" % (value.registers[0]/10, value.registers[0]%10)
+            value = "%d,%d °C" % (
+                  value.registers[0]/10, value.registers[0] % 10)
         return value
 
     def get_humidity(self, arguments):
-        value = self.client.read_input_registers(address=1, count=1, unit=self.unit)
+        value = self.client.read_input_registers(
+              address=1, count=1, unit=self.unit)
         if isinstance(value, ReadRegistersResponseBase):
-            value = "%d,%d %%" % (value.registers[0]/10, value.registers[0]%10)
+            value = "%d,%d %%" % (
+                  value.registers[0]/10, value.registers[0] % 10)
         return value
 
     def get_light(self, arguments):
-        value = self.client.read_input_registers(address=2, count=1, unit=self.unit)
+        value = self.client.read_input_registers(
+            address=2, count=1, unit=self.unit)
         if isinstance(value, ReadRegistersResponseBase):
             value = value.registers[0]
         return value
 
     def read_input_registers(self, arguments):
         if len(arguments) != 2:
-            return "Modo de uso: read_input_registers <start-address> <registers>"
+            return "Modo de uso: read_input_registers <start-address> <regs>"
 
         for i in range(0, len(arguments)):
             if not self.__is_number(arguments[i]):
                 return "%s: se esperaba un entero" % arguments[i]
 
         values = [int(x) for x in arguments]
-        
-        return self.client.read_input_registers(address=values[0], count=values[1], unit=self.unit)
+
+        return self.client.read_input_registers(
+            address=values[0], count=values[1], unit=self.unit)
 
     def read_coils(self, arguments):
         if len(arguments) != 2:
@@ -101,26 +112,30 @@ class DemeterClient(object):
                 return "%s: se esperaba un entero" % arguments[i]
 
         values = [int(x) for x in arguments]
-        
-        return self.client.read_coils(address=values[0], count=values[1], unit=self.unit)
+
+        return self.client.read_coils(
+            address=values[0], count=values[1], unit=self.unit)
 
     def write_coils(self, arguments):
         if len(arguments) < 2:
-            return "Modo de uso: write_coils <start-address> <bit-1> <bit-2> ... <bit-n>"
+            return "Modo de uso: write_coils <start-address> <bit-1> <bit-2> ... <bit-n>"  # noqa: E501
 
         for i in range(0, len(arguments)):
             if not self.__is_number(arguments[i]):
                 return "%s: se esperaba un entero" % arguments[i]
 
         values = [int(x) for x in arguments]
-        
-        return self.client.write_coils(address=values[0], values=values[1:], unit=self.unit)
+
+        return self.client.write_coils(
+                address=values[0], values=values[1:], unit=self.unit)
 
     def get_datetime(self, arguments):
-        response = self.client.read_holding_registers(address=1, count=6, unit=self.unit)
+        response = self.client.read_holding_registers(
+            address=1, count=6, unit=self.unit)
         if isinstance(response, ReadRegistersResponseBase):
             r = response.registers
-            return "%s/%02d/%02d %02d:%02d:%02d" % (r[0], r[1], r[2], r[3], r[4], r[5])
+            return "%s/%02d/%02d %02d:%02d:%02d" % (
+                    r[0], r[1], r[2], r[3], r[4], r[5])
         return response
 
     def set_datetime(self, arguments):
@@ -134,10 +149,12 @@ class DemeterClient(object):
 
         values = [int(x) for x in arguments]
 
-        return self.client.write_registers(address=1, values=values, unit=self.unit)
+        return self.client.write_registers(
+                address=1, values=values, unit=self.unit)
 
     def get_loginterval(self, arguments):
-        response = self.client.read_holding_registers(address=0, count=1, unit=self.unit)
+        response = self.client.read_holding_registers(
+                address=0, count=1, unit=self.unit)
         if isinstance(response, ReadRegistersResponseBase):
             return response.registers[0]
         return response
@@ -149,7 +166,8 @@ class DemeterClient(object):
         if not self.__is_number(arguments[0]):
             return "%s: se esperaba un entero" % arguments[0]
 
-        return self.client.write_registers(address=0, values=[int(arguments[0])], unit=self.unit)
+        return self.client.write_registers(
+            address=0, values=[int(arguments[0])], unit=self.unit)
 
     def read_event(self, arguments):
         if len(arguments) != 1:
@@ -159,7 +177,8 @@ class DemeterClient(object):
             return "%s: se esperaba un entero" % arguments[0]
 
         number = int(arguments[0])
-        response = self.client.read_holding_registers(address=number * 6 + 7, count=6, unit=self.unit)
+        response = self.client.read_holding_registers(
+            address=number * 6 + 7, count=6, unit=self.unit)
         if isinstance(response, ReadRegistersResponseBase):
             return self.__print_event(number, response.registers)
         return response
@@ -167,7 +186,7 @@ class DemeterClient(object):
     def write_event(self, arguments):
         # nro de evento + 6 campos
         if len(arguments) != (1 + 6):
-            return "Modo de uso: write_event <numero de evento> <hh>:<mm>:<ss> <duracion> <relay> <1|0>"
+            return "Modo de uso: write_event <numero de evento> <hh>:<mm>:<ss> <duracion> <relay> <1|0>"  # noqa: E501
 
         for i in range(0, 7):
             if not self.__is_number(arguments[i]):
@@ -176,10 +195,11 @@ class DemeterClient(object):
         number = int(arguments[0])
 
         values = [int(x) for x in arguments[1:]]
-        if values[5] not in [0,1]:
+        if values[5] not in [0, 1]:
             return "%s: el valor debe ser cero o uno" % values[5]
 
-        return self.client.write_registers(address=number * 6 + 7, values=values, unit=self.unit)
+        return self.client.write_registers(
+                address=number * 6 + 7, values=values, unit=self.unit)
 
     def disable_event(self, arguments):
         # nro de evento
@@ -187,11 +207,12 @@ class DemeterClient(object):
             return "Modo de uso: disable_event <numero de evento>"
 
         if not self.__is_number(arguments[0]):
-            return "%s: se esperaba un entero" % arguments[i]
+            return "%s: se esperaba un entero" % arguments[arguments[0]]
 
         number = int(arguments[0])
 
-        return self.client.write_registers(address=number * 6 + 5, values=[0], unit=self.unit)
+        return self.client.write_registers(
+                address=number * 6 + 5, values=[0], unit=self.unit)
 
     def enable_event(self, arguments):
         # nro de evento
@@ -199,43 +220,24 @@ class DemeterClient(object):
             return "Modo de uso: disable_event <numero de evento>"
 
         if not self.__is_number(arguments[0]):
-            return "%s: se esperaba un entero" % arguments[i]
+            return "%s: se esperaba un entero" % arguments[arguments[0]]
 
         number = int(arguments[0])
 
-        return self.client.write_registers(address=number * 6 + 5, values=[0], unit=self.unit)
+        return self.client.write_registers(
+            address=number * 6 + 5, values=[0], unit=self.unit)
 
     def read_events(self, arguments):
-        response = self.client.read_holding_registers(address=7, count=6 * 10, unit=self.unit)
+        response = self.client.read_holding_registers(
+            address=7, count=6 * 10, unit=self.unit)
         if isinstance(response, ReadRegistersResponseBase):
             str = ""
             for i in range(0, 10):
-                str += self.__print_event(i, response.registers[i * 6:(i + 1) * 6])
+                str += self.__print_event(
+                    i, response.registers[i * 6:(i + 1) * 6])
                 str += "\n"
             return str
         return response
-
-    def disable_event(self, arguments):
-        if len(arguments) != 1:
-            return "Modo de uso: disable_event <numero de evento>"
-
-        if not self.__is_number(arguments[0]):
-            return "%s: se esperaba un entero" % arguments[0]
-
-        number = int(arguments[0])
-
-        return self.client.write_registers(address=number * 6 + 7 + 5, values=[0], unit=self.unit)
-
-    def enable_event(self, arguments):
-        if len(arguments) != 1:
-            return "Modo de uso: enable_event <numero de evento>"
-
-        if not self.__is_number(arguments[0]):
-            return "%s: se esperaba un entero" % arguments[0]
-
-        number = int(arguments[0])
-
-        return self.client.write_registers(address=number * 6 + 7 + 5, values=[1], unit=self.unit)
 
     def disable_relay(self, arguments):
         if len(arguments) != 1:
@@ -247,8 +249,9 @@ class DemeterClient(object):
         number = int(arguments[0])
         if number not in [0, 1]:
             return "%d: solo hay dos relays" % number
-        
-        return self.client.write_coils(address=number, values=[0], unit=self.unit)
+
+        return self.client.write_coils(
+                address=number, values=[0], unit=self.unit)
 
     def enable_relay(self, arguments):
         if len(arguments) != 1:
@@ -261,7 +264,8 @@ class DemeterClient(object):
         if number not in [0, 1]:
             return "%d: solo hay dos relays" % number
 
-        return self.client.write_coils(address=number, values=[1], unit=self.unit)
+        return self.client.write_coils(
+                address=number, values=[1], unit=self.unit)
 
     def dummy(self, arguments):
         return None
@@ -270,15 +274,20 @@ class DemeterClient(object):
         return self.valid_commands.get(command, self.dummy)(arguments)
 
     def __print_event(self, number, data):
-        return "Evento #%d (%s) => Inicia a las %02d:%02d:%02d hs., dura: %d segs. y ejecuta en relay #%d" % (
-                                    number, ("habilitado" if data[5] != 0 else "deshabilitado"), data[0],
-                                    data[1], data[2], data[3], data[4])
+        state = "habilitado" if data[5] != 0 else "deshabilitado"
+        date = "%02d:%02d:%02d" % (data[0], data[1], data[2])
+        duration = data[3]
+        relay = data[4]
+
+        return f"Evento #${number} ({state}) => Inicia a las ${date} hs., dura: %{duration} secs y ejecuta en relay #{relay}"  # noqa: E501
+
     def __is_number(self, str):
         try:
             int(str)
         except ValueError:
             return False
         return True
+
 
 class Console(object):
     def __init__(self, autocompletions, history_file):
@@ -292,7 +301,7 @@ class Console(object):
         line = ''
         while True:
             try:
-                line = raw_input(prompt)
+                line = input(prompt)
                 if line != '':
                     return line.split()
             except EOFError:
@@ -300,7 +309,7 @@ class Console(object):
                 print("bye")
                 sys.exit(0)
             except KeyboardInterrupt:
-                print ""
+                print("")
 
     def load_history_file(self, filename):
         if os.path.exists(filename):
@@ -342,13 +351,14 @@ class BufferAwareCompleter(object):
                     if being_completed:
                         # match options with portion of input
                         # being completed
-                        self.current_candidates = [ w for w in candidates
-                                                    if w.startswith(being_completed) ]
+                        self.current_candidates = [
+                                w for w in candidates
+                                if w.startswith(being_completed)]
                     else:
                         # matching empty string so use all candidates
                         self.current_candidates = candidates
 
-                except (KeyError, IndexError), err:
+                except (KeyError, IndexError):
                     self.current_candidates = []
 
         try:
