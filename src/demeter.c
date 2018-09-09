@@ -5,8 +5,8 @@
  *      Author: sebas
  */
 
-#include <modbus/include/mb.h>
-#include <modbus/include/mbport.h>
+#include <mb.h>
+#include <mbport.h>
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -16,21 +16,21 @@
 #include <ctype.h>
 
 #include <demeter.h>
-#include <adc/adc.h>
-#include <ports/ports.h>
-#include <timer/timer.h>
+#include <adc.h>
+#include <ports.h>
+#include <timer.h>
 
-#include <config/config.h>
+#include <config.h>
 
-#include <dht/DHT22.h>
+#include <DHT22.h>
 
 #include <stdio.h>
 
-#include <ff/ff.h>
+#include <ff.h>
 
-#include <i2c/i2c.h>
-#include <rtc/rtc.h>
-#include <rtc/rtc_ds1307.h>
+#include <i2c.h>
+#include <rtc.h>
+#include <rtc_ds1307.h>
 
 #define DATETIME_SIZE	(sizeof(datetime_t) / 2)
 #define EVENTS_SIZE		((sizeof(event_t) * MAX_EVENTS) / 2)
@@ -56,6 +56,7 @@ static void timer0_callback(void);
 static inline long get_seconds(instant_t t);
 static inline void update_state(void);
 static inline void update_log_filename(void);
+
 /**
  * MCU: Atmega328
  * Fuses: Oscilador interno a 8 Mhz (sin dividir por 8)
